@@ -6,12 +6,14 @@ import {
     Param,
     ParseIntPipe,
     Post,
+    Query,
 } from '@nestjs/common';
 import { IBooksService } from './services/books-service.interface';
-import { AddBookRequest } from './dtos/requests/add-book.response';
+import { AddBookRequest } from './dtos/requests/add-book.request';
 import { IReviewsService } from '../reviews/services/reviews-service.interface';
 import { AddReviewRequest } from '../reviews/dtos/requests/add-review.request';
 import { StatusCode } from 'src/common/enums/status-code.enum';
+import { GetAllBooksRequest } from './dtos/requests/get-list.request';
 
 @Controller('books')
 export class BooksController {
@@ -21,8 +23,8 @@ export class BooksController {
     ) {}
 
     @Get()
-    public async getAll() {
-        return await this.booksService.getAll();
+    public async getAll(@Query() request: GetAllBooksRequest) {
+        return await this.booksService.getAll(request);
     }
 
     @Get(':bookId')

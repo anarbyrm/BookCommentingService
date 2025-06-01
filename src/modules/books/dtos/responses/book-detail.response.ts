@@ -10,6 +10,9 @@ export class BookDetailResponse {
     author: string;
 
     @Expose()
+    avgRating: number;
+
+    @Expose()
     @Type(() => ReviewListResponse)
     reviews: ReviewListResponse[];
 }

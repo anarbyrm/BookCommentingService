@@ -1,12 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
 import { IBooksService } from './books-service.interface';
-import { AddBookRequest } from '../dtos/requests/add-book.response';
+import { AddBookRequest } from '../dtos/requests/add-book.request';
 import { Book } from '../entities/book.entity';
 import { BookListResponse } from '../dtos/responses/book-list.response';
 import { BookDetailResponse } from '../dtos/responses/book-detail.response';
+import { GetAllBooksRequest } from '../dtos/requests/get-list.request';
+import { RawBook } from '../types/raw-book-data.type';
 
 @Injectable()
 export class BooksService implements IBooksService {
@@ -20,12 +22,48 @@ export class BooksService implements IBooksService {
      *
      * @returns {Promise<BookListResponse[]>}
      */
-    public async getAll(): Promise<BookListResponse[]> {
-        const books: Book[] = await this.booksRepository.find({
-            relations: ['reviews'],
-        });
+    public async getAll(
+        @Query() request: GetAllBooksRequest,
+    ): Promise<BookListResponse[]> {
+        const query = this.buildQuery(request);
+        const { raw, entities }: RawBook = await query.getRawAndEntities();
 
-        return plainToInstance(BookListResponse, books);
+        const result: BookListResponse[] = [];
+        for (const entity of entities) {
+            const instance = plainToInstance(BookListResponse, entity);
+            const rawBook = raw.find((r) => r.books_id === entity.id);
+            instance.avgRating = rawBook?.avgRating ?? 0;
+            result.push(instance);
+        }
+
+        return result;
+    }
+
+    /**
+     * Builds book query using filter and sort params.
+     *
+     * @param {GetAllBooksRequest} request
+     * @returns {SelectQueryBuilder}
+     */
+    private buildQuery(request: GetAllBooksRequest): SelectQueryBuilder<Book> {
+        const query = this.booksRepository
+            .createQueryBuilder('books')
+            .leftJoinAndSelect('books.reviews', 'review')
+            .addSelect((subQuery) => {
+                return subQuery
+                    .select('AVG(r.rating)', 'avg')
+                    .from('review', 'r')
+                    .where('r.bookId = books.id');
+            }, 'avgRating');
+
+        if (request.minRating) {
+            query.where('avgRating >= :minRating', {
+                minRating: request.minRating,
+            });
+        }
+
+        query.orderBy('avgRating', request.sortOrder);
+        return query;
     }
 
     /**
@@ -44,7 +82,11 @@ export class BooksService implements IBooksService {
             throw new NotFoundException(`Book with id=${bookId} not found.`);
         }
 
-        return plainToInstance(BookDetailResponse, book);
+        const response = plainToInstance(BookDetailResponse, book);
+        const sum = book.reviews.reduce((sum, value) => sum + value.rating, 0);
+        const avgRating = sum / book.reviews.length;
+        response.avgRating = avgRating;
+        return response;
     }
 
     /**
