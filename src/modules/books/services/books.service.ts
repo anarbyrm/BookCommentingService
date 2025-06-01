@@ -84,7 +84,7 @@ export class BooksService implements IBooksService {
 
         const response = plainToInstance(BookDetailResponse, book);
         const sum = book.reviews.reduce((sum, value) => sum + value.rating, 0);
-        const avgRating = sum / book.reviews.length;
+        const avgRating = book.reviews.length ? sum / book.reviews.length : 0;
         response.avgRating = avgRating;
         return response;
     }
