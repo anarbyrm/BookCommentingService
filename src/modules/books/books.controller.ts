@@ -14,13 +14,7 @@ import { AddBookRequest } from './dtos/requests/add-book.request';
 import { IReviewsService } from '../reviews/services/reviews-service.interface';
 import { AddReviewRequest } from '../reviews/dtos/requests/add-review.request';
 import { GetAllBooksRequest } from './dtos/requests/get-list.request';
-import {
-    ApiBody,
-    ApiParam,
-    ApiQuery,
-    ApiResponse,
-    ApiTags,
-} from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { BookListResponse } from './dtos/responses/book-list.response';
 import { BookDetailResponse } from './dtos/responses/book-detail.response';
 
